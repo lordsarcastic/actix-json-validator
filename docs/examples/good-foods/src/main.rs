@@ -1,5 +1,5 @@
 use actix_json_validator::AppJson;
-use actix_web::{post, web, App, HttpResponse, HttpServer, Responder};
+use actix_web::{post, App, HttpResponse, HttpServer, Responder};
 use serde::{Deserialize, Serialize};
 use serde_valid::Validate;
 

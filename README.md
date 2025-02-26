@@ -147,46 +147,47 @@ Or, for a top-level error:
 ---
 
 ## Example
+Example usage of the crate can be found in the [docs/examples/good-foods](./docs/examples/good-foods/) directory. To run the example, build the application with `cargo build` and run it with `cargo run`:
 
-Below is a **simplified** snippet illustrating how you might integrate it into an Actix app:
+```sh
+good-foods$ cargo build
+   Compiling good-foods v0.1.0 (/actix-json-validator/docs/examples/good-foods)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 2.42s
 
-```rust
-use actix_web::{App, HttpServer};
-use actix_json_validator::AppJson; // The crate
-use serde::Deserialize;
-use serde_valid::Validate;
-
-#[derive(Debug, Deserialize, Validate)]
-struct CreateUser {
-    #[validate(min_length = 3)]
-    username: String,
-    #[validate(range(min = 18, max = 120))]
-    age: u8,
-}
-
-async fn create_user_handler(json: AppJson<CreateUser>) -> String {
-    // Access validated data
-    let user = json.into_inner();
-    format!("User {} with age {} created", user.username, user.age)
-}
-
-#[actix_web::main]
-async fn main() -> std::io::Result<()> {
-    HttpServer::new(|| {
-        App::new()
-            .service(
-                actix_web::web::resource("/user")
-                    .route(actix_web::web::post().to(create_user_handler))
-            )
-    })
-    .bind(("127.0.0.1", 8080))?
-    .run()
-    .await
-}
+good-foods$ cargo run
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.06s
+     Running `target/debug/good-foods`
+Starting good-foods server on http://localhost:8080
+  
 ```
 
-When the request is valid, `create_user_handler` is called. When invalid, the library returns a structured error response with the DRF-inspired keys.
+Test the application by sending a POST request to `http://localhost:8080/food` with a JSON body:
 
+```sh
+good-foods$ curl -X POST -H "Content-Type: application/json" \
+  -d '{"name": "Ice Cream", "rating": 9}' \
+  http://localhost:8080/foods
+```
+
+You should see a response like so:
+
+```json
+{"name":"Ice Cream","rating":9}
+```
+
+To test validation errors, send a POST request with invalid data:
+
+```sh
+good-foods$ curl -X POST -H "Content-Type: application/json" \
+  -d '{"name": "Ice Cream", "rating": 12}' \
+  http://localhost:8080/foods
+```
+
+You should see a response like:
+
+```json
+{"rating":["The number must be `<= 10`."]}
+```
 ---
 
 ## Limitations
