@@ -9,6 +9,7 @@ readme = "README.md"
 keywords = ["actix", "actix-web", "json", "serde", "validation"]
 categories = ["web-programming"]
 authors = ["lordsarcastic <adeoti.15.jude@gmail.com>"]
+exclude = [".github/*", "Cargo.toml.orig"]
 
 [dependencies]
 actix-web = "4.9.0"
