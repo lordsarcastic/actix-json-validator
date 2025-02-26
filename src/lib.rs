@@ -8,6 +8,8 @@ use serde::de::DeserializeOwned;
 use serde_json::{json, Value};
 use serde_valid::{validation::Errors as ValidationError, Validate};
 
+
+#[derive(Debug, thiserror::Error)]
 pub enum AppError {
     #[error("{{\"non_field_errors\": [\"Validation failed\"]}}")]
     ValidationError(HashMap<String, Value>),
@@ -17,13 +19,13 @@ pub enum AppError {
 impl ResponseError for AppError {
     fn status_code(&self) -> actix_web::http::StatusCode {
         match self {
-            AccountsError::ValidationError(_) => StatusCode::BAD_REQUEST,
+            AppError::ValidationError(_) => StatusCode::BAD_REQUEST,
         }
     }
 
     fn error_response(&self) -> HttpResponse {
         let response_body = match self {
-            AccountsError::ValidationError(errors) => {
+            AppError::ValidationError(errors) => {
                 serde_json::json!(errors)
             }
         };
@@ -271,6 +273,7 @@ impl Default for JsonConfig {
         }
     }
 }
+
 
 #[cfg(test)]
 mod tests {
