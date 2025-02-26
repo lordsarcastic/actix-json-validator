@@ -1,20 +1,19 @@
 use std::{collections::HashMap, ops::Deref, sync::Arc};
 
 use actix_web::{
-    dev::Payload, web::JsonBody, Error, FromRequest, HttpRequest, http::StatusCode, HttpResponse, HttpResponseBuilder, ResponseError,
+    dev::Payload, http::StatusCode, web::JsonBody, Error, FromRequest, HttpRequest, HttpResponse,
+    HttpResponseBuilder, ResponseError,
 };
 use futures_util::{future::LocalBoxFuture, FutureExt};
 use serde::de::DeserializeOwned;
 use serde_json::{json, Value};
 use serde_valid::{validation::Errors as ValidationError, Validate};
 
-
 #[derive(Debug, thiserror::Error)]
 pub enum AppError {
     #[error("{{\"non_field_errors\": [\"Validation failed\"]}}")]
     ValidationError(HashMap<String, Value>),
 }
-
 
 impl ResponseError for AppError {
     fn status_code(&self) -> actix_web::http::StatusCode {
@@ -33,7 +32,6 @@ impl ResponseError for AppError {
         HttpResponseBuilder::new(self.status_code()).json(response_body)
     }
 }
-
 
 fn format_errors(errors: ValidationError) -> HashMap<String, Value> {
     let mut result = HashMap::new();
@@ -65,11 +63,7 @@ fn process_errors(
             if !array_errors.items.is_empty() {
                 let mut nested_map: HashMap<String, Value> = HashMap::new();
                 for (prop, error) in array_errors.items {
-                    process_errors(
-                        &mut nested_map,
-                        Some(prop.to_string()),
-                        error,
-                    );
+                    process_errors(&mut nested_map, Some(prop.to_string()), error);
                 }
                 for (prop, value) in nested_map {
                     result.insert(prop, value);
@@ -107,13 +101,8 @@ fn process_errors(
                 // else store the entire map:
                 //    "prop": { ... }
 
-                if child_result.len() == 1
-                    && child_result.contains_key("non_field_errors")
-                {
-                    child_map.insert(
-                        prop,
-                        child_result.remove("non_field_errors").unwrap(),
-                    );
+                if child_result.len() == 1 && child_result.contains_key("non_field_errors") {
+                    child_map.insert(prop, child_result.remove("non_field_errors").unwrap());
                 } else {
                     child_map.insert(prop, json!(child_result));
                 }
@@ -193,10 +182,7 @@ where
     type Future = LocalBoxFuture<'static, Result<Self, Self::Error>>;
 
     #[inline]
-    fn from_request(
-        req: &HttpRequest,
-        payload: &mut Payload,
-    ) -> Self::Future {
+    fn from_request(req: &HttpRequest, payload: &mut Payload) -> Self::Future {
         let (limit, ctype) = req
             .app_data::<JsonConfig>()
             .map(|c| (c.limit, c.content_type.clone()))
@@ -214,10 +200,7 @@ where
                     .map(|_| AppJson(data)),
                 Err(e) => Err(Self::Error::ValidationError({
                     let mut formatted_errors = HashMap::new();
-                    formatted_errors.insert(
-                        "error".to_string(),
-                        json!(vec![e.to_string()]),
-                    );
+                    formatted_errors.insert("error".to_string(), json!(vec![e.to_string()]));
                     formatted_errors
                 })),
             })
@@ -225,8 +208,7 @@ where
     }
 }
 
-type ErrHandler =
-    Arc<dyn Fn(Error, &HttpRequest) -> actix_web::Error + Send + Sync>;
+type ErrHandler = Arc<dyn Fn(Error, &HttpRequest) -> actix_web::Error + Send + Sync>;
 
 #[derive(Clone)]
 pub struct JsonConfig {
@@ -245,10 +227,7 @@ impl JsonConfig {
     /// Set custom error handler
     pub fn error_handler<F>(mut self, f: F) -> Self
     where
-        F: Fn(Error, &HttpRequest) -> actix_web::Error
-            + Send
-            + Sync
-            + 'static,
+        F: Fn(Error, &HttpRequest) -> actix_web::Error + Send + Sync + 'static,
     {
         self.ehandler = Some(Arc::new(f));
         self
@@ -273,7 +252,6 @@ impl Default for JsonConfig {
         }
     }
 }
-
 
 #[cfg(test)]
 mod tests {
@@ -305,9 +283,7 @@ mod tests {
         let body = res.error_response().into_body().try_into_bytes().unwrap();
         assert_eq!(
             body,
-            Bytes::from_static(
-                b"{\"name\":[\"The length of the value must be `>= 3`.\"]}"
-            )
+            Bytes::from_static(b"{\"name\":[\"The length of the value must be `>= 3`.\"]}")
         );
     }
 
@@ -337,7 +313,9 @@ mod tests {
         let body = res.error_response().into_body().try_into_bytes().unwrap();
         assert_eq!(
             body,
-            Bytes::from_static(b"{\"inner\":{\"name\":[\"The length of the value must be `>= 3`.\"]}}")
+            Bytes::from_static(
+                b"{\"inner\":{\"name\":[\"The length of the value must be `>= 3`.\"]}}"
+            )
         );
     }
 
@@ -354,16 +332,13 @@ mod tests {
 
         fn top_level_check(value: &TestStruct) -> Result<(), SVError> {
             if !value.is_valid || !value.data.is_empty() {
-                return Err(SVError::Custom(
-                    "Overall data is invalid!".to_string(),
-                ));
+                return Err(SVError::Custom("Overall data is invalid!".to_string()));
             }
             Ok(())
         }
 
         // Provide invalid input so top-level fails
-        let payload_data =
-            json!({"data": "some stuff", "is_valid": false}).to_string();
+        let payload_data = json!({"data": "some stuff", "is_valid": false}).to_string();
         let (req, mut payload) = test::TestRequest::post()
             .set_payload(payload_data)
             .to_http_parts();

@@ -39,19 +39,16 @@ async fn main() -> std::io::Result<()> {
     .await
 }
 
-
 #[cfg(test)]
 mod tests {
     use super::*; // Pull in create_food() and FoodChoice from main.rs
     use actix_web::{body::MessageBody, http::StatusCode, test, App};
     use serde_json::json;
-    
+
     #[actix_web::test]
     async fn test_valid_food() {
         // Arrange
-        let app = test::init_service(
-            App::new().service(create_food)
-        ).await;
+        let app = test::init_service(App::new().service(create_food)).await;
 
         // Act: send a valid payload
         let req = test::TestRequest::post()
@@ -61,7 +58,7 @@ mod tests {
                 "rating": 10
             }))
             .to_request();
-        
+
         let resp = test::call_service(&app, req).await;
 
         // Assert: must be 200 OK
@@ -76,9 +73,7 @@ mod tests {
 
     #[actix_web::test]
     async fn test_invalid_name() {
-        let app = test::init_service(
-            App::new().service(create_food)
-        ).await;
+        let app = test::init_service(App::new().service(create_food)).await;
 
         // Name is only 2 chars => invalid
         let req = test::TestRequest::post()
@@ -104,9 +99,7 @@ mod tests {
 
     #[actix_web::test]
     async fn test_invalid_rating() {
-        let app = test::init_service(
-            App::new().service(create_food)
-        ).await;
+        let app = test::init_service(App::new().service(create_food)).await;
 
         // Rating = 0 => invalid
         let req = test::TestRequest::post()
